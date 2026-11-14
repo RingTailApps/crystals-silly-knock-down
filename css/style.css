@@ -263,13 +263,6 @@ svg { width: 1em; height: 1em; fill: currentColor; }
 .chance-peek .dog-bubble { right: 92px; top: 4px; }
 .chance-peek .dog-bubble::after { content: ""; position: absolute; right: -8px; top: 12px; border: 8px solid transparent; border-left-color: #fff; border-right: 0; }
 @keyframes bubbleIn { from { transform: scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
-.feed-btn { display: flex; align-items: center; gap: 8px; font-family: inherit; font-size: 16px; font-weight: 600; color: #fff; cursor: pointer;
-  background: rgba(10,4,50,.35); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 4px 14px 4px 4px; margin-top: -4px;
-  transition: transform .18s var(--spring), background .2s; }
-.feed-btn:hover { background: rgba(10,4,50,.5); transform: translateY(-2px); }
-.feed-btn:active { transform: scale(.94); }
-.feed-btn img { width: 34px; height: 34px; object-fit: cover; object-position: 50% 20%; border-radius: 50%; background: #fff; border: 2px solid var(--cyan); }
-.feed-btn b { background: var(--gold); color: #5a3400; border-radius: 999px; padding: 0 8px; font-size: 14px; }
 
 .fail-art { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 0; margin-top: 6px; }
 .kevin-sad { height: 96px; filter: drop-shadow(0 6px 8px rgba(0,0,0,.3)) saturate(.85); transform-origin: 50% 100%; animation: droop 2.6s ease-in-out infinite; }
@@ -283,3 +276,50 @@ svg { width: 1em; height: 1em; fill: currentColor; }
 /* per-line fit so long titles never overflow */
 .logo .line .ch, .logo .line + .line .ch { font-size: min(calc(138vw / var(--n, 7)), 25vw, 172px, 17vh) !important; }
 @media (min-width: 900px) and (min-height: 700px) { .tagline { font-size: 27px; } .btn-big { font-size: 48px; } }
+
+/* ---------- Treats + Feed Bubba (Mega Stone) ---------- */
+.hud-treats svg, .treat-earned svg, .treat-total svg, .mega-cost svg, .fly-bone svg, .node-bones svg { width: 2em; height: 1em; }
+.hud-treats { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 700; background: rgba(20,8,70,.45); border: 1px solid rgba(255,255,255,.25);
+  padding: 3px 12px 3px 8px; border-radius: 999px; }
+.hud-treats svg { font-size: 15px; filter: drop-shadow(0 1px 0 rgba(120,60,0,.6)) drop-shadow(0 0 5px rgba(255,210,140,.6)); }
+.hud-treats span { color: #ffe3a8; min-width: 1ch; }
+.hud-treats.bump { animation: bump .35s var(--spring); }
+.fly-bone { position: fixed; z-index: 30; pointer-events: none; font-size: 26px; filter: drop-shadow(0 0 8px rgba(255,230,160,.95)) drop-shadow(0 2px 0 rgba(120,60,0,.6)); }
+
+.mega-btn { position: absolute; z-index: 4; display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 5px; border-radius: 999px; cursor: pointer;
+  font-family: inherit; color: #fff; text-align: left; -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(180deg, rgba(255,190,60,.95), rgba(235,110,20,.95)); border: 2px solid rgba(255,245,200,.9);
+  box-shadow: 0 4px 0 #8a3c00, 0 8px 20px rgba(60,20,0,.45), 0 0 18px rgba(255,200,80,.55), inset 0 2px 0 rgba(255,255,255,.55);
+  transition: transform .18s var(--spring), filter .2s, opacity .2s; animation: megaIdle 2.2s ease-in-out infinite; }
+.mega-btn:hover { transform: translateY(-2px) scale(1.03); }
+.mega-btn:active { transform: translateY(2px) scale(.95); box-shadow: 0 1px 0 #8a3c00, 0 4px 10px rgba(60,20,0,.45); }
+.mega-face { width: 42px; height: 42px; border-radius: 50%; overflow: hidden; background: #fff; border: 2px solid #fff6d8; box-shadow: 0 0 0 2px #c46a10; flex: none; }
+.mega-face img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; display: block; }
+.mega-txt { display: flex; flex-direction: column; line-height: 1.05; }
+.mega-l1 { font-size: 15px; font-weight: 700; text-shadow: 0 2px 0 rgba(120,50,0,.6); white-space: nowrap; }
+.mega-l2 { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .92; white-space: nowrap; }
+.mega-cost { display: flex; align-items: center; gap: 3px; background: rgba(90,30,0,.4); border-radius: 999px; padding: 3px 8px 3px 5px; font-size: 13px; }
+.mega-cost b { font-size: 15px; }
+.mega-btn.poor { animation: none; filter: grayscale(.85) brightness(.8); opacity: .82; box-shadow: 0 3px 0 #3b2a40, 0 6px 14px rgba(0,0,0,.35); }
+.mega-btn.ready { animation: megaReady .8s ease-in-out infinite alternate;
+  background: linear-gradient(180deg, #fff6a8, #ffb21f); color: #5a2a00; }
+.mega-btn.ready .mega-l1, .mega-btn.ready .mega-l2 { text-shadow: none; }
+.mega-btn.chomp .mega-face { animation: chomp .5s ease-in-out 2; }
+@keyframes megaIdle { 0%,100% { box-shadow: 0 4px 0 #8a3c00, 0 8px 20px rgba(60,20,0,.45), 0 0 12px rgba(255,200,80,.45), inset 0 2px 0 rgba(255,255,255,.55); }
+  50% { box-shadow: 0 4px 0 #8a3c00, 0 8px 20px rgba(60,20,0,.45), 0 0 26px rgba(255,210,90,.9), inset 0 2px 0 rgba(255,255,255,.55); } }
+@keyframes megaReady { from { box-shadow: 0 4px 0 #a06000, 0 0 14px rgba(255,240,120,.7); } to { box-shadow: 0 4px 0 #a06000, 0 0 34px rgba(255,240,120,1), 0 0 60px rgba(111,243,255,.6); } }
+@keyframes chomp { 0%,100% { transform: none; } 30% { transform: scale(1.18, .86) rotate(-6deg); } 60% { transform: scale(.92, 1.1) rotate(5deg); } }
+
+.treat-earned { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #fff; background: rgba(10,4,50,.35);
+  border: 1px solid rgba(255,230,170,.45); border-radius: 999px; padding: 5px 6px 5px 12px; margin-top: -4px; box-shadow: 0 0 14px rgba(255,200,100,.25); }
+.treat-earned svg { font-size: 16px; filter: drop-shadow(0 0 5px rgba(255,220,150,.8)); }
+.treat-earned b { display: flex; align-items: center; background: var(--gold); color: #5a3400; border-radius: 999px; padding: 0 9px; font-size: 14px; }
+.treat-earned b::before { content: "Total "; font-weight: 600; font-size: 11px; margin-right: 3px; opacity: .8; }
+.treat-earned.none { opacity: .7; }
+.top-pills { display: flex; gap: 8px; align-items: center; }
+.treat-total svg { font-size: 14px !important; color: inherit; }
+.treat-total span { color: #ffe3a8; }
+.node-bones { display: inline-flex; gap: 1px; margin-left: 6px; vertical-align: -1px; pointer-events: none; }
+.node-bones svg { font-size: 10px; opacity: .45; filter: grayscale(1) brightness(.75); }
+.node-bones svg.on { opacity: 1; filter: drop-shadow(0 0 4px rgba(255,220,150,.9)); }
+@media (max-width: 420px) { .mega-l1 { font-size: 13px; } .mega-face { width: 36px; height: 36px; } .star-total { font-size: 17px; padding: 5px 10px 5px 8px; } .levels-title { font-size: 20px; } }

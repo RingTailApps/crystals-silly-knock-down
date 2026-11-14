@@ -303,7 +303,7 @@
   const S = () => KO.SLING;
   Art.slingPts = function () {
     const s = S();
-    return { back: { x: s.x + 22, y: s.y - 14 }, front: { x: s.x - 20, y: s.y - 8 }, fork: { x: s.x, y: s.y + 62 }, base: { x: s.x, y: KO.GROUND_Y } };
+    return { back: { x: s.x + 22, y: s.y - 14 }, front: { x: s.x - 20, y: s.y - 8 }, fork: { x: s.x, y: s.y + 62 }, base: { x: s.x, y: KO.SLING_BASE_Y || KO.GROUND_Y } };
   };
   function woodLine(g, a, b, w) {
     g.lineCap = "round";
@@ -311,6 +311,34 @@
     g.strokeStyle = "#b8743c"; g.lineWidth = w; g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
     g.strokeStyle = "rgba(255,220,170,0.6)"; g.lineWidth = w * 0.3; g.beginPath(); g.moveTo(a.x - w * 0.2, a.y); g.lineTo(b.x - w * 0.2, b.y); g.stroke();
   }
+  // Raised rock ledge the slingshot (and Chance) stand on
+  Art.drawLedge = function (g) {
+    const L = KO.LEDGE; if (!L) return;
+    const GY = KO.GROUND_Y, top = L.top, x0 = L.x0 - 30, x1 = L.x1 + 22;
+    g.save();
+    g.fillStyle = "rgba(30,20,40,0.22)"; g.beginPath(); g.ellipse((x0 + x1) / 2 + 10, GY + 6, (x1 - x0) * 0.6, 12, 0, 0, 7); g.fill();
+    const body = () => { g.beginPath(); g.moveTo(x0 - 14, GY + 8); g.lineTo(x0, top + 30); g.quadraticCurveTo(x0 + 4, top + 2, x0 + 30, top); g.lineTo(x1 - 26, top);
+      g.quadraticCurveTo(x1 - 2, top + 2, x1, top + 34); g.lineTo(x1 + 18, GY + 8); g.closePath(); };
+    const gr = g.createLinearGradient(0, top, 0, GY);
+    gr.addColorStop(0, "#a497b8"); gr.addColorStop(0.5, "#7d7096"); gr.addColorStop(1, "#5a4e72");
+    g.fillStyle = gr; body(); g.fill();
+    g.save(); body(); g.clip();
+    g.fillStyle = "rgba(40,24,70,0.28)"; g.beginPath(); g.moveTo(x1 - 40, top); g.lineTo(x1 + 20, top); g.lineTo(x1 + 30, GY + 10); g.lineTo(x1 - 70, GY + 10); g.fill();  // shaded face
+    g.strokeStyle = "rgba(40,24,70,0.35)"; g.lineWidth = 3; g.lineCap = "round";
+    [[x0 + 40, top + 50, x0 + 80, top + 95], [x0 + 120, top + 70, x0 + 150, top + 120], [x0 + 70, top + 110, x0 + 50, GY - 10]].forEach(([a, b, c, d]) => { g.beginPath(); g.moveTo(a, b); g.lineTo(c, d); g.stroke(); });
+    g.fillStyle = "rgba(255,255,255,0.18)"; g.fillRect(x0, top + 6, x1 - x0, 8);
+    g.restore();
+    // embedded crystals
+    g.save(); g.translate(x0 + 22, top + 96); g.rotate(-0.3); crystalShape(g, 9, 18, "#22d1ee"); g.restore();
+    g.save(); g.translate(x1 - 18, top + 130); g.rotate(0.25); crystalShape(g, 7, 13, "#a855f7"); g.restore();
+    // grass cap
+    g.fillStyle = "#3fbf4a"; g.beginPath(); g.moveTo(x0 + 2, top + 14); g.quadraticCurveTo(x0 + 6, top - 4, x0 + 30, top - 6); g.lineTo(x1 - 26, top - 6);
+    g.quadraticCurveTo(x1 + 2, top - 4, x1 + 2, top + 16);
+    for (let x = x1 - 4; x > x0 + 4; x -= 16) g.quadraticCurveTo(x - 4, top + 22, x - 8, top + 10);
+    g.closePath(); g.fill();
+    g.fillStyle = "#7ee36a"; g.fillRect(x0 + 26, top - 6, x1 - x0 - 52, 4);
+    g.restore();
+  };
   Art.drawSlingBack = function (g) {
     const p = Art.slingPts();
     g.fillStyle = "rgba(30,20,40,0.25)"; g.beginPath(); g.ellipse(p.base.x, p.base.y + 4, 40, 9, 0, 0, 7); g.fill();
@@ -341,6 +369,48 @@
 
   /* ---------- glow stone (projectile) ---------- */
   const stonePts = []; for (let i = 0; i < 9; i++) stonePts.push(0.86 + hash(i + 40) * 0.16);
+  // Glossy bone-shaped dog treat (bobbing handled by caller)
+  Art.drawTreat = function (g, x, y, t) {
+    g.save(); g.translate(x, y);
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3);
+    const halo = g.createRadialGradient(0, 0, 4, 0, 0, 46);
+    halo.addColorStop(0, `rgba(255,240,190,${0.5 + pulse * 0.25})`); halo.addColorStop(1, "rgba(255,220,140,0)");
+    g.fillStyle = halo; g.beginPath(); g.arc(0, 0, 46, 0, Math.PI * 2); g.fill();
+    g.rotate(Math.sin(t * 1.6) * 0.18 - 0.25);
+    const L = 20, R = 9.5, H = 8.5;
+    const bone = () => {
+      g.beginPath();
+      [[-L, -R * 0.62], [-L, R * 0.62], [L, -R * 0.62], [L, R * 0.62]].forEach(([cx, cy]) => { g.moveTo(cx + R, cy); g.arc(cx, cy, R, 0, Math.PI * 2); });
+      g.rect(-L, -H, L * 2, H * 2);
+    };
+    g.fillStyle = "#7a3e0e"; g.save(); g.translate(0, 3); bone(); g.fill(); g.restore();      // drop shadow / outline
+    const gr = g.createLinearGradient(0, -18, 0, 18);
+    gr.addColorStop(0, "#fff3d1"); gr.addColorStop(0.45, "#f5c879"); gr.addColorStop(1, "#c77a2c");
+    g.fillStyle = gr; bone(); g.fill();
+    g.fillStyle = "rgba(255,255,255,.8)";                                                      // gloss
+    g.beginPath(); g.ellipse(-L - 2, -R * 0.62 - 3.5, 4.2, 2.6, -0.5, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(L - 2, -R * 0.62 - 3.5, 4.2, 2.6, -0.5, 0, Math.PI * 2); g.fill();
+    g.globalAlpha = 0.7; g.beginPath(); g.roundRect ? g.roundRect(-L + 4, -H + 2.5, L * 2 - 10, 3.4, 2) : g.rect(-L + 4, -H + 2.5, L * 2 - 10, 3.4); g.fill(); g.globalAlpha = 1;
+    // sparkle glints
+    for (let i = 0; i < 2; i++) {
+      const ph = (t * 0.9 + i * 0.5) % 1, s = Math.sin(ph * Math.PI);
+      if (s > 0.05) { g.save(); g.translate(i ? -L + 2 : L + 6, i ? 10 : -14); g.rotate(ph); g.globalAlpha = s; glint(g, 7 * s); g.restore(); }
+    }
+    g.restore();
+  };
+  // Golden power aura around a Mega Stone
+  Art.drawMegaAura = function (g, x, y, r, t) {
+    g.save(); g.translate(x, y);
+    const p = 0.5 + 0.5 * Math.sin(t * 8);
+    const gr = g.createRadialGradient(0, 0, r * 0.7, 0, 0, r * 2.1);
+    gr.addColorStop(0, `rgba(255,230,120,${0.55 + p * 0.25})`); gr.addColorStop(0.5, "rgba(255,170,40,.28)"); gr.addColorStop(1, "rgba(255,150,0,0)");
+    g.fillStyle = gr; g.beginPath(); g.arc(0, 0, r * 2.1, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = `rgba(255,248,200,${0.5 + p * 0.4})`; g.lineWidth = 3;
+    g.setLineDash([10, 9]); g.lineDashOffset = -t * 60;
+    g.beginPath(); g.arc(0, 0, r * 1.35, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+    for (let i = 0; i < 4; i++) { const a = t * 2.2 + i * Math.PI / 2; g.save(); g.translate(Math.cos(a) * r * 1.55, Math.sin(a) * r * 1.55); g.rotate(a); glint(g, 6 + p * 3); g.restore(); }
+    g.restore();
+  };
   Art.drawBall = function (g, x, y, r, ang, alpha) {
     if (!(r > 0.5)) return;
     g.save(); g.globalAlpha = alpha == null ? 1 : alpha; g.translate(x, y);

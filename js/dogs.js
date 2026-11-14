@@ -8,6 +8,8 @@
   };
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   D.reset = function () { [D.chance, D.kevin].forEach(d => { d.y = 0; d.vy = 0; d.mood = 0; }); D.bubbles.length = 0; };
+  // Chance sits up on the slingshot ledge; Kevin lounges on the grass
+  D.baseY = (d) => (d === D.chance && KO.LEDGE ? KO.LEDGE.top : KO.GROUND_Y);
   D.hop = function (d, power) { if (d.y >= -0.5) d.vy = -(power || 420); };
   D.say = function (who, text, dur) {
     D.bubbles = D.bubbles.filter(b => b.who !== who);
@@ -24,6 +26,13 @@
       D.say("chance", pick(["Nice shot!", "Crystal clear!", "Good human!"]), 2.4);
     } else if (kind === "fail") {
       D.chance.mood = D.kevin.mood = 1; D.say("kevin", "Ruff luck...", 2.4);
+    } else if (kind === "treat") {
+      D.hop(D.chance, 380); D.hop(D.kevin, 300);
+      D.say(Math.random() < 0.5 ? "chance" : "kevin", pick(["A treat!", "Ooh, snack!", "Bone-anza!"]), 1.5);
+    } else if (kind === "feed") {
+      D.hop(D.chance, 520); D.say("chance", pick(["Yum! MEGA power!", "Nom nom... MEGA!", "Yum!"]), 2);
+    } else if (kind === "broke") {
+      D.say("chance", "Earn more treats!", 1.6);
     } else if (kind === "start") {
       D.say("kevin", "Pull back & let go!", 2.6);
     }
@@ -37,7 +46,7 @@
   };
   function drawDog(g, d, t, phase) {
     if (!d.img.complete || !d.img.naturalWidth) return;
-    const GY = KO.GROUND_Y + 6, h = d.h, w = h * d.img.naturalWidth / d.img.naturalHeight;
+    const GY = D.baseY(d) + 6, h = d.h, w = h * d.img.naturalWidth / d.img.naturalHeight;
     const air = Math.min(1, -d.y / 60);
     const breathe = Math.sin(t * 2.4 + phase) * 0.02;
     const sy = (1 + breathe - air * -0.06) * (d.mood ? 0.93 : 1), sx = (1 - breathe * 0.6 - air * 0.04);
@@ -69,8 +78,9 @@
       const d = D[b.who], k = Math.min(1, b.t / 0.18) * (b.t > b.dur - 0.2 ? (b.dur - b.t) / 0.2 : 1);
       const over = 1 + Math.max(0, 0.15 - Math.abs(b.t - 0.15)) ;
       // keep bubbles on screen
-      const v = KO.Art.view(), minX = -v.offX / v.scale + 130;
-      bubble(g, Math.max(minX, d.x + (b.who === "kevin" ? 70 : 10)), KO.GROUND_Y + d.y - d.h - 14, b.text, Math.max(0.01, k * over));
+      g.font = '600 22px Fredoka, "Arial Rounded MT Bold", sans-serif';
+      const v = KO.Art.view(), minX = -v.offX / v.scale + (g.measureText(b.text).width + 28) / 2 + 10;
+      bubble(g, Math.max(minX, d.x + (b.who === "kevin" ? 70 : 10)), D.baseY(d) + d.y - d.h - 14, b.text, Math.max(0.01, k * over));
     });
   };
   KO.Dogs = D;

@@ -13,13 +13,16 @@ window.KO = window.KO || {};
   KO.VIEW_REGION = { x0: 28, x1: 905, y0: 300, y1: 1235 }; // area always kept on screen
 
   // Slingshot
-  KO.SLING = { x: 175, y: 925 };      // ball rest position
-  KO.SLING_BASE_Y = KO.GROUND_Y;
+  // Slingshot sits on a raised rock ledge so flat shots clear the pedestal lips
+  KO.SLING = { x: 175, y: 745 };      // ball rest position
+  KO.SLING_BASE_Y = 995;              // ledge top (slingshot base)
+  KO.LEDGE = { x0: 18, x1: 236, top: 995 };
   KO.MAX_PULL = 150;                  // world units
   KO.MIN_PULL = 22;
   KO.LAUNCH_SPEED = 25;               // px per physics step at full pull
   KO.GRAB_RADIUS = 190;
-  KO.BALL_R = 24;
+  KO.BALL_R = 21;
+  KO.MEGA_R = 36;                     // Mega Stone (Feed Bubba power-up)
 
   KO.STEP_MS = 1000 / 60;
   KO.GRAVITY_PER_STEP = 0.001 * KO.STEP_MS * KO.STEP_MS; // matches Matter gravity.scale=0.001, y=1

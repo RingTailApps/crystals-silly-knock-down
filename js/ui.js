@@ -19,7 +19,18 @@
       this.write();
       return { isBest, best: Math.max(prevBest, score) };
     },
-    reset() { this.data.stars = {}; this.data.best = {}; this.write(); }
+    reset() { this.data.stars = {}; this.data.best = {}; this.data.got = {}; this.data.bonus3 = {}; this.data.treats = 0; this.write(); },
+    // treats: spendable bank + per-level collected flags so treats never respawn for farming
+    initTreats() {
+      const d = this.data;
+      if (d.treats == null) d.treats = Math.min(3, Math.max(0, this.totalStars() - (d.treatsFed || 0))); // migrate old star-based treats
+      d.got = d.got || {}; d.bonus3 = d.bonus3 || {}; delete d.treatsFed;
+    },
+    treatGot(i, k) { return !!(this.data.got[i] && this.data.got[i][k]); },
+    gotCount(i) { return (this.data.got[i] || []).filter(Boolean).length; },
+    collect(i, k) { if (this.treatGot(i, k)) return false; (this.data.got[i] = this.data.got[i] || [])[k] = true; this.data.treats++; this.write(); return true; },
+    spend(n) { if (this.data.treats < n) return false; this.data.treats -= n; this.write(); return true; },
+    starBonus(i, stars) { if (stars < 3 || this.data.bonus3[i]) return 0; this.data.bonus3[i] = 1; this.data.treats++; this.write(); return 1; }
   };
   KO.Save = Save;
 
@@ -136,8 +147,13 @@
         const st = document.createElement("div"); st.className = "node-stars";
         for (let s = 0; s < 3; s++) st.innerHTML += `<svg class="${s < Save.stars(i) ? "on" : ""}"><use href="#i-star"/></svg>`;
         b.appendChild(st);
+        const tb = document.createElement("div"); tb.className = "node-bones";
+        const nt = (KO.LEVELS[i].treats || []).length;
+        tb.title = `Treats found: ${Save.gotCount(i)}/${nt}`;
+        for (let s = 0; s < nt; s++) tb.innerHTML += `<svg class="${Save.treatGot(i, s) ? "on" : ""}"><use href="#i-bone"/></svg>`;
+        b._bones = tb;
       }
-      const nm = document.createElement("div"); nm.className = "node-name"; nm.textContent = KO.LEVELS[i].name; b.appendChild(nm);
+      const nm = document.createElement("div"); nm.className = "node-name"; nm.textContent = KO.LEVELS[i].name; if (b._bones) nm.appendChild(b._bones); b.appendChild(nm);
       b.dataset.level = i;
       b.addEventListener("click", () => {
         A().unlock();
@@ -147,6 +163,7 @@
       map.appendChild(b);
     });
     $("star-total").textContent = `${Save.totalStars()}/${n * 3}`;
+    $("treat-total").textContent = Save.data.treats;
     // scroll to current
     const target = pts[unlocked];
     requestAnimationFrame(() => { const sc = $("map-scroll"); sc.scrollTop = Math.max(0, target.y - sc.clientHeight * 0.55); });
@@ -184,12 +201,19 @@
       const shots = $("hud-shots");
       if (shots.children.length !== d.shots) { shots.innerHTML = ""; for (let i = 0; i < d.shots; i++) shots.appendChild(document.createElement("i")); }
       [...shots.children].forEach((el, i) => el.classList.toggle("used", i >= d.shotsLeft));
+      if (!flying) $("hud-treat-count").textContent = Save.data.treats;
+      syncMega();
     } else if (type === "intro") {
       const bn = $("banner"); show(bn);
       $("banner-level").textContent = `Level ${d.level}`; $("banner-name").textContent = d.name;
       $("banner-goal").textContent = `Knock all ${d.blocks} off · ${d.shots} stones`;
       const inner = bn.firstElementChild; inner.style.animation = "none"; void inner.offsetWidth; inner.style.animation = "";
       clearTimeout(UI._bt); UI._bt = setTimeout(() => hide(bn), 2150);
+    } else if (type === "treat") {
+      if (!KO.Game.simMode) Save.collect(d.level, d.k);
+      flyTreat(d.x, d.y);
+    } else if (type === "mega-fired") {
+      syncMega();
     } else if (type === "ready") {
       if (UI.current === 0 && !Save.stars(0)) { show($("hint")); }
     } else if (type === "win") {
@@ -207,7 +231,11 @@
     const rec = Save.record(d.level - 1, d.stars, d.total);
     m.querySelectorAll(".bstar").forEach(s => s.classList.remove("on"));
     const scoreEl = $("complete-score"), bonusEl = $("complete-bonus"), bestEl = $("complete-best");
-    $("complete-bubble").textContent = "Chance: " + ["Good try!", "Nice shot!", "Pawsome!"][d.stars - 1];
+    const got = KO.Game.treatsThisLevel(), bonus = Save.starBonus(d.level - 1, d.stars);
+    $("complete-bubble").textContent = "Chance: " + (got ? ["Treats! Yum!", "Snacks for me?!", "Best. Human. Ever."][Math.min(got, 3) - 1] : ["Good try!", "Nice shot!", "Pawsome!"][d.stars - 1]);
+    const lt = (KO.LEVELS[d.level - 1].treats || []).length, found = Save.gotCount(d.level - 1);
+    $("treat-earned-txt").textContent = `+${got + bonus} treat${got + bonus === 1 ? "" : "s"}` + (bonus ? " (3-star bonus!)" : "") + ` · found ${found}/${lt}`;
+    $("treat-earned").classList.toggle("none", got + bonus === 0);
     syncTreats();
     $("complete-cheer").textContent = ["Nice try!", "Great shooting!", "Flawless!"][d.stars - 1];
     scoreEl.textContent = "0"; bonusEl.textContent = ""; bestEl.textContent = ""; bestEl.classList.remove("new");
@@ -281,7 +309,7 @@
   UI.resume = function () { closeModal($("modal-pause"), () => { KO.Game.paused = false; }); };
 
   UI.init = function () {
-    Save.load();
+    Save.load(); Save.initTreats();
     A().soundOn = Save.data.sound; A().musicOn = Save.data.music;
     buildLogo(); syncToggles();
     press($("btn-play"), () => UI.transition(() => UI.showLevels()));
@@ -299,17 +327,22 @@
     press($("btn-next"), () => UI.startLevel(Math.min(UI.current + 1, KO.LEVELS.length - 1)));
     press($("btn-retry"), () => UI.startLevel(UI.current));
     press($("btn-failed-levels"), () => UI.transition(() => UI.showLevels()));
-    press($("btn-feed"), () => {
-      const img = $("complete-chance"), bub = $("complete-bubble");
-      if (treatsLeft() > 0) {
-        Save.data.treatsFed = (Save.data.treatsFed || 0) + 1; Save.write(); syncTreats();
-        bub.textContent = "Chance: " + ["Yum!", "Nom nom!", "Best. Treat. Ever."][Save.data.treatsFed % 3];
-        const r = img.getBoundingClientRect(); KO.screenBurst && KO.screenBurst(r.left + r.width / 2, r.top + r.height * 0.35);
-        A().sparkle();
-      } else bub.textContent = "Chance: Earn stars for treats!";
-      img.classList.remove("hop"); void img.offsetWidth; img.classList.add("hop");
-      bub.style.animation = "none"; void bub.offsetWidth; bub.style.animation = "bubbleIn .35s var(--spring) both";
+    press($("btn-mega"), () => {
+      const btn = $("btn-mega");
+      if (KO.Game.megaLoaded()) return;
+      if (Save.data.treats < KO.TREAT_COST || !KO.Game.canFeed()) {
+        if (Save.data.treats < KO.TREAT_COST) { KO.Dogs.react("broke"); A().thunk(2); }
+        btn.animate([{ transform: "translateX(0)" }, { transform: "translateX(-7px)" }, { transform: "translateX(7px)" }, { transform: "translateX(0)" }], { duration: 260 });
+        return;
+      }
+      if (KO.Game.feed()) {
+        Save.spend(KO.TREAT_COST); $("hud-treat-count").textContent = Save.data.treats;
+        const r = btn.querySelector(".mega-face").getBoundingClientRect(); KO.screenBurst && KO.screenBurst(r.left + r.width / 2, r.top + r.height / 2);
+        btn.classList.remove("chomp"); void btn.offsetWidth; btn.classList.add("chomp");
+        syncMega();
+      }
     });
+    window.addEventListener("resize", placeMega);
     press($("btn-settings-close"), () => closeModal($("modal-settings")));
     let resetArmed = false;
     press($("btn-reset"), (e) => {
@@ -326,8 +359,41 @@
     KO.Game.on(onGame);
     UI.showTitle();
   };
-  function treatsLeft() { return Math.max(0, Save.totalStars() - (Save.data.treatsFed || 0)); }
-  function syncTreats() { $("treat-count").textContent = treatsLeft(); }
+  function syncTreats() { $("treat-count").textContent = Save.data.treats; }
+  // Feed Bubba button: sits on the ground just under the slingshot
+  function placeMega() {
+    const btn = $("btn-mega"); if (!btn || !KO.toScreen) return;
+    const p = KO.toScreen(KO.SLING.x + 20, KO.GROUND_Y + 14), w = btn.offsetWidth || 170, h = btn.offsetHeight || 56;
+    btn.style.left = Math.max(8, Math.min(innerWidth - w - 8, p.x - w / 2)) + "px";
+    btn.style.top = Math.max(70, Math.min(innerHeight - h - 10, p.y)) + "px";
+  }
+  function syncMega() {
+    const btn = $("btn-mega"); if (!btn) return;
+    const loaded = KO.Game.megaLoaded && KO.Game.megaLoaded(), poor = Save.data.treats < KO.TREAT_COST;
+    btn.classList.toggle("ready", !!loaded); btn.classList.toggle("poor", !loaded && poor);
+    $("mega-l2").textContent = loaded ? "MEGA LOADED!" : poor ? "Earn more treats!" : "MEGA STONE";
+    $("mega-cost").textContent = KO.TREAT_COST;
+    placeMega();
+  }
+  let flying = 0;
+  function flyTreat(wx, wy) {
+    const s = KO.toScreen(wx, wy), target = $("hud-treats").getBoundingClientRect();
+    const el = document.createElement("div"); el.className = "fly-bone"; el.innerHTML = `<svg><use href="#i-bone"/></svg>`;
+    document.body.appendChild(el); flying++;
+    const tx = target.left + 18 - s.x, ty = target.top + target.height / 2 - s.y;
+    el.style.left = s.x + "px"; el.style.top = s.y + "px";
+    const an = el.animate([
+      { transform: "translate(-50%,-50%) scale(.4) rotate(0)", opacity: 0 },
+      { transform: `translate(calc(-50% + ${tx * 0.15}px), calc(-50% + ${-60 + ty * 0.1}px)) scale(1.5) rotate(-20deg)`, opacity: 1, offset: 0.3 },
+      { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(.8) rotate(25deg)`, opacity: 1 }
+    ], { duration: 850, easing: "cubic-bezier(.5,0,.6,1)" });
+    an.onfinish = () => {
+      el.remove(); flying--;
+      const c = $("hud-treat-count"); c.textContent = Save.data.treats;
+      const pill = $("hud-treats"); pill.classList.remove("bump"); void pill.offsetWidth; pill.classList.add("bump");
+      A().pop(4); syncMega();
+    };
+  }
   UI.hideHint = () => hide($("hint"));
   KO.UI = UI;
 })(window.KO);

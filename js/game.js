@@ -6,6 +6,7 @@
   let engine, level, levelIndex = 0, blocks = [], podiums = [], ball = null, fading = [];
   let shotsLeft = 0, shotsUsed = 0, score = 0, stateT = 0, simT = 0, introDur = 0;
   let comboCount = 0, trail = [], prevTrail = [], drag = null, lastTick = 0, restFrames = 0;
+  let treats = [], megaNext = false, treatsThisLevel = 0;
   let snapT = 9, reloadT = 9, endTimer = 0, pendingBombs = [], clearLine = 0, stepCount = 0;
   let listener = () => {};
   const SL = () => KO.SLING;
@@ -21,13 +22,14 @@
     levelIndex = i; level = KO.LEVELS[i];
     engine = Engine.create({ positionIterations: 12, velocityIterations: 10 });
     engine.gravity.y = 1;
-    blocks = []; podiums = []; ball = null; fading = []; pendingBombs = [];
+    blocks = []; podiums = []; ball = null; fading = []; pendingBombs = []; treats = []; megaNext = false; treatsThisLevel = 0;
     trail = []; prevTrail = []; drag = null; comboCount = 0; score = 0; shotsUsed = 0; shotsLeft = level.shots;
     stateT = 0; simT = 0; snapT = 9; reloadT = 0; endTimer = 0; stepCount = 0;
     FX().reset();
     const GY = KO.GROUND_Y;
     const ground = Bodies.rectangle(KO.W / 2, GY + 200, 8000, 400, { isStatic: true, label: "ground", friction: 0.9 });
-    Composite.add(engine.world, ground);
+    const L = KO.LEDGE, ledge = Bodies.rectangle((L.x0 + L.x1) / 2, (L.top + GY) / 2 + 4, L.x1 - L.x0, GY - L.top, { isStatic: true, label: "ground", friction: 0.9, chamfer: { radius: [14, 14, 0, 0] } });
+    Composite.add(engine.world, [ground, ledge]);
     level.podiums.forEach((p) => {
       if (p.rock) {
         // tilting rocker: a static stone post plus a slab that rocks around its center
@@ -39,7 +41,7 @@
       }
       const body = p.float
         ? Bodies.rectangle(p.x, p.top + 17, p.w, 34, { isStatic: true, label: "podium", friction: 1, chamfer: { radius: 8 } })
-        : Bodies.rectangle(p.x, (p.top + GY) / 2, p.w, GY - p.top, { isStatic: true, label: "podium", friction: 1 });
+        : Bodies.rectangle(p.x, (p.top + GY) / 2, p.w, GY - p.top, { isStatic: true, label: "podium", friction: 1, chamfer: { radius: [10, 10, 0, 0] } });
       Composite.add(engine.world, body);
       podiums.push({ body, cx: p.x, baseX: p.x, top: p.top, w: p.w, float: !!p.float, move: p.move });
     });
@@ -65,6 +67,14 @@
     level.blocks.forEach(b2 => { ry0 = Math.min(ry0, b2.y - b2.h / 2); });
     KO.Dogs && KO.Dogs.reset();
     if (KO.Dogs && i === 0) setTimeout(() => { if (levelIndex === 0 && shotsUsed === 0) KO.Dogs.react("start"); }, 1600);
+    // treats: sensors the stone can fly through; collected ones never respawn (except in sim mode)
+    (level.treats || []).forEach((t2, k) => {
+      if (!Game.simMode && KO.Save && KO.Save.treatGot(i, k)) return;
+      const body = Bodies.circle(t2.x, t2.y, KO.TREAT_R, { isStatic: true, isSensor: true, label: "treat" });
+      Composite.add(engine.world, body);
+      treats.push({ body, x: t2.x, y: t2.y, k, got: false, phase: k * 1.7 });
+      ry0 = Math.min(ry0, t2.y + 60); rx1 = Math.max(rx1, t2.x + 50);
+    });
     KO.setRegion && KO.setRegion({ x0: KO.SLING.x - 140, x1: Math.max(rx1, 760), y0: Math.min(ry0 - 150, 640), y1: KO.GROUND_Y + 55 });
     Events.on(engine, "collisionStart", onCollide);
     Game.state = "intro"; Game.paused = false;
@@ -75,6 +85,13 @@
   function onCollide(ev) {
     for (const pair of ev.pairs) {
       const a = pair.bodyA, b = pair.bodyB;
+      if (a.label === "treat" || b.label === "treat") {
+        const tb = a.label === "treat" ? a : b, other = tb === a ? b : a;
+        if (other.label === "ball") { const tr = treats.find(x => x.body === tb); if (tr && !tr.got) pendingTreats.push(tr); }
+        continue;
+      }
+      if (a.label === "ball" || b.label === "ball") { const bl = a.label === "ball" ? a : b, o = bl === a ? b : a; if (!bl.plugin.first) { bl.plugin.first = o.label; Game.firstHit = o.label; Game.firstHitLip = o.label === "podium" && bl.position.y < o.bounds.min.y + 4; } }
+      if (megaShock(a, b)) continue;
       const rel = Math.hypot(a.velocity.x - b.velocity.x, a.velocity.y - b.velocity.y);
       if (rel < 2.2) continue;
       const ba = a.plugin.blk, bb = b.plugin.blk;
@@ -165,7 +182,7 @@
     const len = Math.hypot(dx, dy);
     if (len > KO.MAX_PULL) { dx *= KO.MAX_PULL / len; dy *= KO.MAX_PULL / len; }
     // keep the ball above the ground
-    const maxDy = KO.GROUND_Y - KO.BALL_R - 6 - SL().y;
+    const maxDy = KO.SLING_BASE_Y - (megaNext ? KO.MEGA_R : KO.BALL_R) - 6 - SL().y;
     if (dy > maxDy) dy = maxDy;
     drag.x = SL().x + dx; drag.y = SL().y + dy;
     drag.pull = Math.min(1, Math.hypot(dx, dy) / KO.MAX_PULL);
@@ -185,11 +202,14 @@
   function launch(d) {
     const v = launchVel(d);
     if (ball) { fading.push({ body: ball, t: 0 }); }
-    ball = Bodies.circle(d.x, d.y, KO.BALL_R, { label: "ball", density: 0.008, restitution: 0.35, friction: 0.5, frictionAir: 0 });
+    const mega = megaNext; megaNext = false;
+    ball = Bodies.circle(d.x, d.y, mega ? KO.MEGA_R : KO.BALL_R, { label: "ball", density: mega ? 0.02 : 0.008, restitution: mega ? 0.15 : 0.35, friction: 0.15, frictionAir: 0 });
+    ball.plugin.mega = mega;
+    if (mega) { A().boom(); FX().ring(d.x, d.y, "#ffd52e", 90); emit("mega-fired"); }
     Composite.add(engine.world, ball);
     Body.setVelocity(ball, v);
     Body.setAngularVelocity(ball, v.x * 0.01);
-    shotsLeft--; shotsUsed++;
+    shotsLeft--; shotsUsed++; Game.firstHit = null;
     comboCount = 0; restFrames = 0;
     prevTrail = trail; trail = [];
     Game.state = "flying"; stateT = 0; snapT = 0;
@@ -230,6 +250,8 @@
       blocks.forEach(k => { if (k.attached && k.pod === pi && !k.cleared) Body.translate(k.body, { x: dx, y: 0 }); });
     });
     Engine.update(engine, KO.STEP_MS);
+    if (pendingTreats.length) { const l = pendingTreats; pendingTreats = []; l.forEach(collectTreat); }
+    if (pendingShock) { const p = pendingShock; pendingShock = null; doShock(p); }
     // bombs
     if (pendingBombs.length) { const list = pendingBombs; pendingBombs = []; list.forEach(explode); }
     // clearing
@@ -316,6 +338,7 @@
     g.fillStyle = "rgba(255,255,255,0.9)";
     trail.forEach(p => { g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); });
     const sp = Art.slingPts();
+    Art.drawLedge(g);
     KO.Dogs && KO.Dogs.draw(g, t);
     Art.drawSlingBack(g);
     // loaded ball position
@@ -339,12 +362,18 @@
         squash: k.squash, scared: k.scared, blink: k.blink, alpha: k.alpha, scale: k.scale }, look);
     }
     // flying / fading balls
-    fading.forEach(f => Art.drawBall(g, f.body.position.x, f.body.position.y, KO.BALL_R * (1 - f.t / 0.4 * 0.5), f.body.angle, 1 - f.t / 0.4));
-    if (ball && !fading.some(f => f.body === ball)) Art.drawBall(g, ball.position.x, ball.position.y, KO.BALL_R, ball.angle, 1);
+    treats.forEach(tr => { if (!tr.got) Art.drawTreat(g, tr.x, tr.y + Math.sin(t * 2.4 + tr.phase) * 6, t + tr.phase); });
+    fading.forEach(f => Art.drawBall(g, f.body.position.x, f.body.position.y, (f.body.plugin.mega ? KO.MEGA_R : KO.BALL_R) * (1 - f.t / 0.4 * 0.5), f.body.angle, 1 - f.t / 0.4));
+    if (ball && !fading.some(f => f.body === ball)) {
+      if (ball.plugin.mega) Art.drawMegaAura(g, ball.position.x, ball.position.y, KO.MEGA_R, t);
+      Art.drawBall(g, ball.position.x, ball.position.y, ball.plugin.mega ? KO.MEGA_R : KO.BALL_R, ball.angle, 1);
+    }
     if (bp) {
       const ang = Math.atan2(bp.y - SL().y, bp.x - SL().x);
       if (drag) Art.drawPouch(g, bp, ang + Math.PI);
-      Art.drawBall(g, bp.x, bp.y, KO.BALL_R * bscale, 0, 1);
+      const r0 = megaNext ? KO.MEGA_R : KO.BALL_R;
+      if (megaNext) Art.drawMegaAura(g, bp.x, bp.y, r0 * bscale, t);
+      Art.drawBall(g, bp.x, bp.y, r0 * bscale, 0, 1);
     }
     Art.drawBand(g, sp.front, bandPt, stretch);
     Art.drawSlingFront(g);
@@ -396,6 +425,58 @@
   };
 
   Game.skipIntro = function () { if (Game.state === "intro") { blocks.forEach(k => (k.scale = 1)); Game.state = "aim"; stateT = 0; } };
+  /* ---------------- treats + Mega Stone ---------------- */
+  let pendingTreats = [];
+  function collectTreat(tr) {
+    if (tr.got) return;
+    tr.got = true; treatsThisLevel++;
+    Composite.remove(engine.world, tr.body);
+    A().treat();
+    FX().burst(tr.x, tr.y, ["#ffe7b0", "#f2b45c", "#fff", "#ffd52e"], 16, 0.7); FX().sparkle(tr.x, tr.y, 12); FX().ring(tr.x, tr.y, "#fff3c0", 70);
+    const v = KO.Art.view(), vx0 = -v.offX / v.scale + 90, vx1 = (v.sw - v.offX) / v.scale - 90;
+    FX().text(clamp(tr.x, vx0, Math.max(vx0, vx1)), tr.y - 40, "+1 treat", { size: 36, cols: ["#fff7d6", "#f2a43a"] });
+    KO.Dogs && KO.Dogs.react("treat");
+    emit("treat", { level: levelIndex, k: tr.k, x: tr.x, y: tr.y });
+  }
+  function megaShock(a, b) {
+    const m = a.plugin && a.plugin.mega ? a : (b.plugin && b.plugin.mega ? b : null);
+    if (!m || m.plugin.shocked) return false;
+    m.plugin.shocked = true;
+    const p = { x: m.position.x, y: m.position.y }, R = 230;
+    pendingShock = p;
+    return false;
+  }
+  let pendingShock = null;
+  function doShock(p) {
+    const R = 260;
+    A().megaBoom(); FX().addShake(28);
+    FX().ring(p.x, p.y, "#ffd52e", 240); FX().ring(p.x, p.y, "#6ff3ff", 170); FX().dust(p.x, p.y, 14); FX().sparkle(p.x, p.y, 14);
+    FX().text(p.x, p.y - 60, "MEGA!", { size: 70, cols: ["#fffbd0", "#ffb21f"] });
+    blocks.forEach(k => {
+      if (k.cleared) return;
+      const body = k.body, dx = body.position.x - p.x, dy = body.position.y - p.y, dd = Math.hypot(dx, dy) || 1;
+      if (dd > R) return;
+      const f = 1 - dd / R, s = 18 * f;
+      if (k.attached) detachChain(k);
+      Body.setVelocity(body, { x: body.velocity.x + (dx / dd) * s, y: body.velocity.y + (dy / dd) * s - 3 * f });
+      Body.setAngularVelocity(body, body.angularVelocity + (dx > 0 ? 0.12 : -0.12) * f);
+      if (k.type === "bomb" && dd < 160) pendingBombs.push(k);
+    });
+  }
+  Game.canFeed = () => Game.state === "aim" && !megaNext && !Game.paused;
+  Game.megaLoaded = () => megaNext;
+  Game.feed = function () {
+    if (!Game.canFeed()) return false;
+    megaNext = true; reloadT = 0;
+    A().chomp(); setTimeout(() => A().boom(), 380);
+    FX().addShake(8); FX().sparkle(SL().x, SL().y, 18); FX().ring(SL().x, SL().y, "#ffd52e", 120);
+    KO.Dogs && KO.Dogs.react("feed");
+    const d = KO.Dogs && KO.Dogs.chance; if (d) for (let i = 0; i < 6; i++) FX().text(d.x + (Math.random() - 0.5) * 80, KO.Dogs.baseY(d) - d.h - 20 - i * 6, "\u2665", { size: 30 + Math.random() * 14, dur: 1 + Math.random() * 0.4, cols: ["#ffc2dc", "#ff3b7a"] });
+    hud();
+    return true;
+  };
+  Game.treatsThisLevel = () => treatsThisLevel;
+  Game.treatInfo = () => treats.map(t3 => ({ k: t3.k, got: t3.got }));
   Game.info = () => ({ state: Game.state, shotsLeft, shotsUsed, score, blocksLeft: blocks.length ? blocksLeft() : 0, total: blocks.length, level: levelIndex + 1 });
   Game.levelIndex = () => levelIndex;
   Game._eng = () => engine;

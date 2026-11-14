@@ -59,7 +59,7 @@
   for (let i = 0; i < 14; i++) floaters.push({ x: Math.random(), y: Math.random(), s: 18 + Math.random() * 30, c: KO.PALETTE[i % 8], r: Math.random() * 6, vr: (Math.random() - 0.5) * 1.2, vy: 0.02 + Math.random() * 0.04 });
   function dogTap(p) {
     [["chance", "Woof!"], ["kevin", "Arf arf!"]].forEach(([k, txt]) => { const d = KO.Dogs[k];
-      if (Math.abs(p.x - d.x) < d.h * 0.5 && p.y > KO.GROUND_Y - d.h && p.y < KO.GROUND_Y + 10) { KO.Dogs.hop(d, 420); KO.Dogs.say(k, txt, 1.4); KO.Audio.pop(3); } });
+      if (Math.abs(p.x - d.x) < d.h * 0.5 && p.y > KO.Dogs.baseY(d) - d.h && p.y < KO.Dogs.baseY(d) + 10) { KO.Dogs.hop(d, 420); KO.Dogs.say(k, txt, 1.4); KO.Audio.pop(3); } });
   }
   function menuTap(e) {
     const p = toWorld(e.clientX, e.clientY);
@@ -91,7 +91,7 @@
     const land = view.sw > view.sh * 1.1;
     const px = land ? Math.max(640, toWorld(view.sw * 0.83, 0).x) : 640, shift = px - 640;
     KO.Art.drawPodium(g, { cx: px, top: 820, w: 260 }, t);
-    KO.Dogs.update(dt); KO.Dogs.draw(g, t);
+    KO.Art.drawLedge(g); KO.Dogs.update(dt); KO.Dogs.draw(g, t);
     KO.Art.drawSlingBack(g);
     const sp = KO.Art.slingPts();
     const bob = Math.sin(t * 2) * 6;

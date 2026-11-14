@@ -40,12 +40,12 @@
 
   const levels = [];
   // stars: [max shots used for 3 stars, max shots used for 2 stars]
-  levels.push(L("First Strike", 3, [1, 2], [pod(640, 820, 190)], tower(640, 820, 3, 72, 72)));
-  levels.push(L("Twin Towers", 4, [2, 3], [pod(640, 820, 270)],
+  levels.push(L("First Strike", 3, [1, 2], [pod(640, 820, 140)], tower(640, 820, 3, 72, 72)));
+  levels.push(L("Twin Towers", 4, [2, 3], [pod(640, 820, 210)],
     [...tower(595, 820, 3, 64, 64), ...tower(690, 820, 3, 64, 64)]));
-  levels.push(L("Gem Pyramid", 3, [1, 2], [pod(640, 830, 290)], pyramid(640, 830, 3, 66)));
+  levels.push(L("Gem Pyramid", 3, [1, 2], [pod(640, 830, 232)], pyramid(640, 830, 3, 66)));
   levels.push(L("Sky Spire", 3, [1, 2], [pod(650, 900, 170)], tower(650, 900, 7, 60, 62)));
-  levels.push(L("Crystal Wall", 4, [2, 3], [pod(630, 840, 300)], wall(630, 840, 4, 2, 58, 58)));
+  levels.push(L("Crystal Wall", 4, [2, 3], [pod(630, 840, 262)], wall(630, 840, 4, 2, 58, 58)));
   levels.push(L("Twin Peaks", 4, [2, 3], [pod(500, 930, 160), pod(760, 760, 170)],
     [...tower(500, 930, 3, 64, 64), ...pyramid(760, 760, 2, 62)]));
   levels.push(L("Obsidian Base", 4, [2, 3], [pod(650, 860, 200)],
@@ -70,7 +70,7 @@
     return out;
   })()));
   levels.push(L("Drifting Isle", 4, [2, 3],
-    [pod(640, 760, 210, { float: true, move: { ax: 80, period: 7 } })],
+    [pod(640, 760, 150, { float: true, move: { ax: 80, period: 7 } })],
     tower(640, 760, 4, 64, 64).map(o => (o.pod = 0, o))));
   levels.push(L("Crystal Castle", 5, [2, 4], [pod(650, 870, 290, { rock: { amp: 0.07, period: 7 } })], (() => {
     const top = 870, out = [];
@@ -92,15 +92,38 @@
       return out;
     })()));
   // rocker levels
-  levels.push(L("Tipping Point", 4, [2, 3], [pod(640, 820, 260, { rock: { amp: 0.16, period: 5 } })],
+  levels.push(L("Tipping Point", 4, [2, 3], [pod(640, 820, 204, { rock: { amp: 0.16, period: 5 } })],
     pyramid(640, 820, 3, 58).map(o => (o.pod = 0, o))));
   levels.push(L("Seesaw Spire", 3, [1, 2],
-    [pod(470, 960, 140), pod(700, 800, 200, { rock: { amp: 0.09, period: 4.5 } })],
+    [pod(470, 960, 140), pod(700, 800, 130, { rock: { amp: 0.09, period: 4.5 } })],
     [...tower(470, 960, 2, 58, 58), ...tower(700, 800, 4, 60, 58).map(o => (o.pod = 1, o))]));
   levels.push(L("Twin Rockers", 4, [1, 3],
-    [pod(530, 900, 180, { rock: { amp: 0.13, period: 5 } }), pod(770, 740, 180, { rock: { amp: 0.11, period: 6.5 } })],
+    [pod(530, 900, 146, { rock: { amp: 0.13, period: 5 } }), pod(770, 740, 120, { rock: { amp: 0.11, period: 6.5 } })],
     [...pyramid(530, 900, 2, 58).map(o => (o.pod = 0, o)),
      ...[b(770, 740 - 29, 64, 58, "obsidian", "heavy"), ...tower(770, 740 - 58 - G, 2, 58, 58)].map(o => (o.pod = 1, o))]));
+
+  // Collectible bone treats per level (world coords). Verified reachable with tools/level_sim.py.
+  const TREATS = [
+    [[450, 740]],
+    [[470, 610], [640, 410]],
+    [[420, 690], [640, 470]],
+    [[500, 550], [650, 300]],
+    [[430, 630], [630, 550]],
+    [[380, 730], [630, 610], [760, 470]],
+    [[450, 610], [650, 465]],
+    [[470, 670], [640, 465]],
+    [[430, 610], [640, 510]],
+    [[430, 650], [640, 380], [845, 670]],
+    [[470, 530], [640, 350]],
+    [[460, 630], [650, 400]],
+    [[560, 770], [640, 500], [800, 295]],
+    [[450, 610], [640, 490]],
+    [[560, 670], [700, 410]],
+    [[530, 610], [650, 700], [770, 405]]
+  ];
+  levels.forEach((lv, i) => { lv.treats = (TREATS[i] || []).map(([x, y]) => ({ x, y })); });
+  KO.TREAT_COST = 3;          // treats per Mega Stone
+  KO.TREAT_R = 24;            // sensor radius
 
   KO.LEVELS = levels;
 })(window.KO);

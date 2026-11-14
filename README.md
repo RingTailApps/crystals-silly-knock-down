@@ -25,3 +25,9 @@ Edit `KO.GAME_TITLE` in js/config.js. The logo, page title, and credits all upda
 - tools/: Playwright playthrough test and level stability/solvability sim (needs the server running on :8080)
 
 Debug hooks in the browser console: `KO.debug.start(i)`, `KO.debug.shoot(angleDeg, power0to1)`, `KO.debug.info()`.
+
+## Treats & Feed Bubba
+- Each level hides 1-3 bone treats. Fly a stone through one to collect it (+1 treat, saved; each treat counts once, so no farming). First 3-star clear of a level gives a +1 bonus treat.
+- Treat total shows in the HUD and on the Crystal Trail map (per-level bones next to each level name).
+- **Feed Bubba** (button under the slingshot, costs 3 treats): Chance eats and the next stone becomes a **Mega Stone**: bigger, heavier, golden aura, shockwave on first impact. It replaces your next normal stone.
+- The slingshot sits on a raised rock ledge so flat shots clear the pedestal lips.

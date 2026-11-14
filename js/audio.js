@@ -89,6 +89,13 @@
     noise(0.9, 0.8, "lowpass", 1800, 80, 0.7);
     tone("sine", 110, 30, 0.7, 0.7);
   };
+  A.megaBoom = () => {
+    if (!ok()) return;
+    noise(1.2, 0.9, "lowpass", 900, 40, 0.8);
+    tone("sine", 80, 22, 1.0, 0.9); tone("triangle", 160, 40, 0.5, 0.35);
+  };
+  A.chomp = () => { if (!ok()) return; const t = ctx.currentTime; for (let i = 0; i < 3; i++) { noise(0.06, 0.3, "bandpass", 900, 500, 2, t + i * 0.13); tone("sine", 300, 180, 0.07, 0.15, t + i * 0.13); } };
+  A.treat = () => { if (!ok()) return; const t = ctx.currentTime; [784, 1046, 1318].forEach((f, i) => tone("triangle", f, f * 1.02, 0.18, 0.22, t + i * 0.05)); };
   A.star = (i) => {
     if (!ok()) return; const f = [880, 1108, 1318][i] || 1318;
     tone("sine", f, f, 0.9, 0.35); tone("sine", f * 2, f * 2, 0.5, 0.1); tone("triangle", f * 3, f * 3, 0.25, 0.05);
