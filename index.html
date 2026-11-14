@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#3fb6ff">
+<title>Crystals Silly Knock Down</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect x=%228%22 y=%228%22 width=%2248%22 height=%2248%22 rx=%2214%22 fill=%22%23ff3b5c%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4.5" height="16" rx="1.8"/><rect x="13.5" y="4" width="4.5" height="16" rx="1.8"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1.2 1.2 0 0 0 1.8 1l12-7.5a1.2 1.2 0 0 0 0-2l-12-7.5A1.2 1.2 0 0 0 7 4.5z"/></symbol>
+    <symbol id="i-restart" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 1-7.4 5l2.6 1A5.2 5.2 0 1 0 12 6.8V10L6.5 5.5 12 1z"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M13.6 2l.5 2.6a8 8 0 0 1 2 1.2l2.5-.9 1.6 2.8-2 1.7a8 8 0 0 1 0 2.3l2 1.7-1.6 2.8-2.5-.9a8 8 0 0 1-2 1.2l-.5 2.6h-3.2l-.5-2.6a8 8 0 0 1-2-1.2l-2.5.9-1.6-2.8 2-1.7a8 8 0 0 1 0-2.3l-2-1.7 1.6-2.8 2.5.9a8 8 0 0 1 2-1.2l.5-2.6zM12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15.5 3.5L7 12l8.5 8.5 2.1-2.1L11.2 12l6.4-6.4z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M8.5 3.5L17 12l-8.5 8.5-2.1-2.1L12.8 12 6.4 5.6z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-2.5 8V7a2.5 2.5 0 0 1 5 0v3z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 1.8l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.9l-6.4 3.5 1.4-7.1-5.3-5 7.2-.9z"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M3 9h4l5-4.5v15L7 15H3z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 4.5l11-2.5v13.5a3 3 0 1 1-2.2-2.9V6.8L11.2 8.3v9.2a3 3 0 1 1-2.2-2.9z"/></symbol>
+    <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <button class="rbtn small" id="btn-pause" aria-label="Pause"><svg><use href="#i-pause"/></svg></button>
+    <div class="hud-center">
+      <div class="hud-level">Level <b id="hud-level">1</b></div>
+      <div class="hud-score" id="hud-score">0</div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-shots" id="hud-shots"></div>
+      <div class="hud-blocks"><span id="hud-blocks">0</span> to go</div>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <section id="screen-title" class="screen">
+    <div class="title-wrap">
+      <div class="logo" id="logo"></div>
+      <div class="tagline">Pull. Aim. <em>Knock 'em all off!</em></div>
+      <button class="btn btn-green btn-big" id="btn-play"><span>PLAY</span></button>
+    </div>
+    <div class="title-row">
+        <button class="rbtn" id="btn-title-settings" aria-label="Settings"><svg><use href="#i-gear"/></svg></button>
+        <button class="rbtn" id="btn-title-sound" aria-label="Sound"><svg><use href="#i-sound"/></svg></button>
+        <button class="rbtn" id="btn-title-music" aria-label="Music"><svg><use href="#i-music"/></svg></button>
+      </div>
+    <div class="studio" id="studio"></div>
+  </section>
+
+  <!-- Level select -->
+  <section id="screen-levels" class="screen hidden">
+    <header class="levels-top">
+      <button class="rbtn small" id="btn-levels-back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+      <div class="levels-title">Candy Trail</div>
+      <div class="star-total"><svg><use href="#i-star"/></svg><span id="star-total">0</span></div>
+    </header>
+    <div class="map-scroll" id="map-scroll"><div class="map" id="map"></div></div>
+  </section>
+
+  <!-- Modals -->
+  <div id="modal-pause" class="modal hidden">
+    <div class="panel">
+      <div class="ribbon"><span>Paused</span></div>
+      <div class="panel-body">
+        <div class="toggle-row">
+          <button class="rbtn toggle" data-toggle="sound" aria-label="Sound"><svg><use href="#i-sound"/></svg></button>
+          <button class="rbtn toggle" data-toggle="music" aria-label="Music"><svg><use href="#i-music"/></svg></button>
+        </div>
+        <button class="btn btn-green" id="btn-resume"><svg><use href="#i-play"/></svg><span>Resume</span></button>
+        <button class="btn btn-orange" id="btn-restart"><svg><use href="#i-restart"/></svg><span>Restart</span></button>
+        <button class="btn btn-blue" id="btn-pause-levels"><svg><use href="#i-map"/></svg><span>Levels</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-complete" class="modal hidden">
+    <div class="panel">
+      <div class="ribbon gold"><span>Level Complete!</span></div>
+      <div class="panel-body">
+        <div class="big-stars">
+          <div class="bstar s1"><svg class="empty"><use href="#i-star"/></svg><svg class="full"><use href="#i-star"/></svg></div>
+          <div class="bstar s2"><svg class="empty"><use href="#i-star"/></svg><svg class="full"><use href="#i-star"/></svg></div>
+          <div class="bstar s3"><svg class="empty"><use href="#i-star"/></svg><svg class="full"><use href="#i-star"/></svg></div>
+        </div>
+        <div class="score-label">Score</div>
+        <div class="score-big" id="complete-score">0</div>
+        <div class="score-sub" id="complete-bonus"></div>
+        <div class="score-best" id="complete-best"></div>
+        <div class="btn-row">
+          <button class="rbtn" id="btn-complete-levels" aria-label="Levels"><svg><use href="#i-map"/></svg></button>
+          <button class="rbtn" id="btn-complete-replay" aria-label="Replay"><svg><use href="#i-restart"/></svg></button>
+          <button class="btn btn-green btn-next" id="btn-next"><span>Next</span><svg><use href="#i-next"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-failed" class="modal hidden">
+    <div class="panel">
+      <div class="ribbon red"><span>Out of Gumballs!</span></div>
+      <div class="panel-body">
+        <canvas id="sad-block" width="160" height="160"></canvas>
+        <div class="fail-text" id="fail-text">So close!</div>
+        <button class="btn btn-green" id="btn-retry"><svg><use href="#i-restart"/></svg><span>Try Again</span></button>
+        <button class="btn btn-blue" id="btn-failed-levels"><svg><use href="#i-map"/></svg><span>Levels</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-settings" class="modal hidden">
+    <div class="panel">
+      <div class="ribbon purple"><span>Settings</span></div>
+      <div class="panel-body">
+        <div class="setting"><span><svg><use href="#i-sound"/></svg>Sound</span><button class="switch" data-toggle="sound"><i></i></button></div>
+        <div class="setting"><span><svg><use href="#i-music"/></svg>Music</span><button class="switch" data-toggle="music"><i></i></button></div>
+        <button class="btn btn-red small-btn" id="btn-reset"><span>Reset Progress</span></button>
+        <button class="btn btn-green" id="btn-settings-close"><span>Done</span></button>
+        <div class="credits" id="credits"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="banner" class="hidden"><div class="banner-inner"><div class="banner-level" id="banner-level">Level 1</div><div class="banner-name" id="banner-name">First Bite</div><div class="banner-goal" id="banner-goal"></div></div></div>
+  <div id="hint" class="hidden">Drag the gumball back &amp; let go!</div>
+  <div id="transition"></div>
+</div>
+
+<script src="js/vendor/matter.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
