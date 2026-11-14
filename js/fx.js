@@ -10,7 +10,7 @@
     power = power || 1;
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, s = rnd(150, 520) * power;
-      add({ type: Math.random() < 0.55 ? "chunk" : "circle", x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 180 * power,
+      add({ type: Math.random() < 0.8 ? "chunk" : "circle", x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 180 * power,
         g: 1300, drag: 0.98, life: rnd(0.5, 1.0), max: 1, size: rnd(6, 15), color: cols[i % cols.length], rot: rnd(0, 6), vr: rnd(-12, 12) });
     }
   };
@@ -62,7 +62,10 @@
       g.globalAlpha = Math.max(0, Math.min(1, k));
       g.fillStyle = p.color;
       if (p.type === "circle") { g.beginPath(); g.arc(p.x, p.y, p.size * 0.5 * (0.5 + 0.5 * k), 0, 7); g.fill(); }
-      else if (p.type === "chunk") { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); KO.Art.rr(g, -p.size / 2, -p.size / 2, p.size, p.size, p.size * 0.3); g.fill(); g.fillStyle = "rgba(255,255,255,0.55)"; g.fillRect(-p.size / 2 + 2, -p.size / 2 + 2, p.size * 0.4, p.size * 0.25); g.restore(); }
+      else if (p.type === "chunk") { // crystal shard
+        const z = p.size; g.save(); g.translate(p.x, p.y); g.rotate(p.rot);
+        g.beginPath(); g.moveTo(0, -z * 0.8); g.lineTo(z * 0.45, z * 0.5); g.lineTo(-z * 0.4, z * 0.35); g.closePath(); g.fill();
+        g.fillStyle = "rgba(255,255,255,0.6)"; g.beginPath(); g.moveTo(0, -z * 0.8); g.lineTo(-z * 0.4, z * 0.35); g.lineTo(-z * 0.05, z * 0.1); g.closePath(); g.fill(); g.restore(); }
       else if (p.type === "star") { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); star(g, p.size * (0.4 + 0.6 * k)); g.fill(); g.restore(); }
       else if (p.type === "puff") { g.globalAlpha *= 0.7; g.beginPath(); g.arc(p.x, p.y, p.size * (1.6 - k * 0.6), 0, 7); g.fill(); }
       else if (p.type === "ring") { const q = 1 - p.life / p.max; g.globalAlpha = 1 - q; g.strokeStyle = p.color; g.lineWidth = 14 * (1 - q) + 2; g.beginPath(); g.arc(p.x, p.y, p.size * (0.2 + q), 0, 7); g.stroke(); }

@@ -29,6 +29,14 @@
     const ground = Bodies.rectangle(KO.W / 2, GY + 200, 8000, 400, { isStatic: true, label: "ground", friction: 0.9 });
     Composite.add(engine.world, ground);
     level.podiums.forEach((p) => {
+      if (p.rock) {
+        // tilting rocker: a static stone post plus a slab that rocks around its center
+        const post = Bodies.rectangle(p.x, (p.top + 34 + GY) / 2, 44, GY - p.top - 34, { isStatic: true, label: "podium", friction: 1 });
+        const slab = Bodies.rectangle(p.x, p.top + 17, p.w, 34, { isStatic: true, label: "podium", friction: 1, chamfer: { radius: 8 } });
+        Composite.add(engine.world, [post, slab]);
+        podiums.push({ body: slab, cx: p.x, baseX: p.x, top: p.top, w: p.w, rock: p.rock, angle: 0 });
+        return;
+      }
       const body = p.float
         ? Bodies.rectangle(p.x, p.top + 17, p.w, 34, { isStatic: true, label: "podium", friction: 1, chamfer: { radius: 8 } })
         : Bodies.rectangle(p.x, (p.top + GY) / 2, p.w, GY - p.top, { isStatic: true, label: "podium", friction: 1 });
@@ -40,7 +48,7 @@
       const opts = { label: "block", friction: 0.8, frictionStatic: 1.2, restitution: 0.06, density: 0.001, frictionAir: 0.004 };
       if (b.type === "heavy") opts.density = 0.0028;
       if (b.pod != null) { opts.friction = 1; opts.frictionStatic = 2; }
-      if (b.type === "jelly") { opts.restitution = 0.72; opts.friction = 0.5; opts.density = 0.0008; }
+      if (b.type === "bouncy") { opts.restitution = 0.72; opts.friction = 0.5; opts.density = 0.0008; }
       let body;
       if (b.type === "bomb") body = Bodies.circle(b.x, b.y, b.w / 2, Object.assign(opts, { density: 0.0012, restitution: 0.2, frictionAir: 0.01 }));
       else body = Bodies.rectangle(b.x, b.y, b.w, b.h, Object.assign(opts, { chamfer: { radius: Math.min(b.w, b.h) * 0.12 } }));
@@ -51,6 +59,13 @@
       blocks.push(blk);
     });
     introDur = blocks.length * 0.06 + 0.55;
+    // frame the camera on this level's content so blocks stay big on phones
+    let rx1 = 0, ry0 = KO.GROUND_Y;
+    level.podiums.forEach(p => { rx1 = Math.max(rx1, p.x + p.w / 2 + (p.move ? p.move.ax : 0) + 30); });
+    level.blocks.forEach(b2 => { ry0 = Math.min(ry0, b2.y - b2.h / 2); });
+    KO.Dogs && KO.Dogs.reset();
+    if (KO.Dogs && i === 0) setTimeout(() => { if (levelIndex === 0 && shotsUsed === 0) KO.Dogs.react("start"); }, 1600);
+    KO.setRegion && KO.setRegion({ x0: KO.SLING.x - 140, x1: Math.max(rx1, 760), y0: Math.min(ry0 - 150, 640), y1: KO.GROUND_Y + 55 });
     Events.on(engine, "collisionStart", onCollide);
     Game.state = "intro"; Game.paused = false;
     hud();
@@ -66,7 +81,7 @@
       // a hit from the ball or a loose block detaches blocks riding a moving platform
       if (ba && ba.attached && (b.label === "ball" || (bb && !bb.attached))) detachChain(ba);
       if (bb && bb.attached && (a.label === "ball" || (ba && !ba.attached))) detachChain(bb);
-      [ba, bb].forEach(k => { if (k && !k.cleared) k.sqv += Math.min(0.5, rel * 0.03) * (k.type === "jelly" ? 2 : 1); });
+      [ba, bb].forEach(k => { if (k && !k.cleared) k.sqv += Math.min(0.5, rel * 0.03) * (k.type === "bouncy" ? 2 : 1); });
       if (stateT > 0.2 || Game.state === "flying") A().thunk(rel);
       const isBall = a.label === "ball" || b.label === "ball";
       const sup = pair.collision.supports && pair.collision.supports[0];
@@ -102,6 +117,10 @@
     });
   }
 
+  function bigTextPos() {
+    const v = KO.Art.view();
+    return [(v.sw / 2 - v.offX) / v.scale, Math.max(420, (Math.max(150, v.sh * 0.3) - v.offY) / v.scale)];
+  }
   function markCleared(k, isBomb) {
     k.cleared = true; k.clearT = 0;
     comboCount++;
@@ -117,14 +136,15 @@
     const word = KO.COMBO_WORDS.filter(w => w[0] === comboCount)[0];
     const left = blocksLeft();
     if (left === 0) {
-      FX().text(KO.W / 2, 420, KO.CLEAR_WORD, { big: true, size: 76, dur: 1.9, cols: ["#fffbd0", "#ff9d1f"] });
+      FX().text(...bigTextPos(), KO.CLEAR_WORD, { big: true, size: 76, dur: 1.9, cols: ["#fffbd0", "#ff9d1f"] });
     } else if (word) {
-      FX().text(KO.W / 2, 420, word[1], { big: true, cols: [["#ffe0f7", "#ff4fb8"], ["#fff7a8", "#ffb21f"], ["#d8ffd0", "#3fcf5a"], ["#d6ecff", "#3b8cff"], ["#f0dcff", "#a855f7"]][KO.COMBO_WORDS.indexOf(word) % 5] });
+      FX().text(...bigTextPos(), word[1], { big: true, cols: [["#ffe0f7", "#ff4fb8"], ["#fff7a8", "#ffb21f"], ["#d8ffd0", "#3fcf5a"], ["#d6ecff", "#3b8cff"], ["#f0dcff", "#a855f7"]][KO.COMBO_WORDS.indexOf(word) % 5] });
       A().sparkle();
     }
+    KO.Dogs && left > 0 && KO.Dogs.react("clear", comboCount);
     hud();
     if (left === 0 && Game.state !== "won" && !(Game.state === "failed" && Game._sentEnd)) {
-      Game.state = "won"; endTimer = 0;
+      Game.state = "won"; endTimer = 0; KO.Dogs && KO.Dogs.react("win");
       FX().confetti(0, KO.W, 0, 120);
     }
   }
@@ -174,6 +194,8 @@
     prevTrail = trail; trail = [];
     Game.state = "flying"; stateT = 0; snapT = 0;
     A().twang(); A().whoosh();
+    FX().addShake(5 + Math.hypot(v.x, v.y) * 0.25);
+    FX().dust(d.x, d.y, 6); FX().sparkle(d.x, d.y, 5);
     hud();
   }
   Game.debugShoot = function (angleDeg, power) {
@@ -188,6 +210,14 @@
     stepCount++;
     simT += KO.STEP_MS / 1000;
     podiums.forEach(p => {
+      if (p.rock) {
+        const a = p.rock.amp * Math.sin((simT * Math.PI * 2) / p.rock.period);
+        const da = a - p.angle, pivot = { x: p.body.position.x, y: p.body.position.y };
+        Body.setAngle(p.body, a); p.angle = a;
+        const pi = podiums.indexOf(p);
+        blocks.forEach(k => { if (k.attached && k.pod === pi && !k.cleared) Body.rotate(k.body, da, pivot); });
+        return;
+      }
       if (!p.move) return;
       const nx = p.baseX + p.move.ax * Math.sin((simT * Math.PI * 2) / p.move.period);
       const dx = nx - p.body.position.x;
@@ -244,7 +274,7 @@
     }
     for (let i = fading.length - 1; i >= 0; i--) { const f = fading[i]; f.t += dt; if (f.t > 0.4) { Composite.remove(engine.world, f.body); fading.splice(i, 1); } }
     if (ball && Game.state === "flying" && Math.random() < 0.5 && ball.speed > 6) FX().trailPuff(ball.position.x, ball.position.y);
-    FX().update(dt);
+    FX().update(dt); KO.Dogs && KO.Dogs.update(dt);
     if (Game.state === "flying") {
       const p = ball.position;
       const out = p.x < -200 || p.x > KO.W + 200 || p.y > KO.H + 200;
@@ -256,7 +286,7 @@
         if (shotsLeft > 0) {
           if (ball) { fading.push({ body: ball, t: 0 }); ball = null; }
           Game.state = "aim"; stateT = 0; reloadT = 0; A().pop(0);
-        } else { Game.state = "failed"; endTimer = 0; A().fail(); }
+        } else { Game.state = "failed"; endTimer = 0; A().fail(); KO.Dogs && KO.Dogs.react("fail"); }
       }
     } else if (Game.state === "won") {
       endTimer += dt;
@@ -286,6 +316,7 @@
     g.fillStyle = "rgba(255,255,255,0.9)";
     trail.forEach(p => { g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); });
     const sp = Art.slingPts();
+    KO.Dogs && KO.Dogs.draw(g, t);
     Art.drawSlingBack(g);
     // loaded ball position
     const loaded = Game.state === "aim" || Game.state === "intro";
@@ -320,21 +351,39 @@
     // aim preview
     if (drag && Math.hypot(drag.x - SL().x, drag.y - SL().y) >= KO.MIN_PULL) {
       const v = launchVel(drag); let x = drag.x, y = drag.y, vx = v.x, vy = v.y;
-      const n = 34;
-      for (let i = 1; i <= n * 2; i++) {
+      const n = 60, spacing = 4, phase = Math.floor((t * 30) % spacing);
+      for (let i = 1; i <= n; i++) {
         vy += KO.GRAVITY_PER_STEP; x += vx; y += vy;
-        if (i % 2 === 0 && i > 4) {
-          const q = 1 - i / (n * 2);
-          g.globalAlpha = 0.25 + q * 0.75;
-          g.fillStyle = "#fff"; g.beginPath(); g.arc(x, y, 3 + q * 5, 0, 7); g.fill();
-          g.strokeStyle = "rgba(160,30,110,0.5)"; g.lineWidth = 2; g.stroke();
+        if (i > 5 && (i + spacing - phase) % spacing === 0) {
+          const q = 1 - i / n;
+          g.globalAlpha = Math.min(1, 0.15 + q * 1.1);
+          g.fillStyle = "rgba(40,20,90,0.35)"; g.beginPath(); g.arc(x + 1.5, y + 2, 3 + q * 5, 0, 7); g.fill();
+          g.fillStyle = i % (spacing * 3) === 0 ? "#7ff6ff" : "#fff"; g.beginPath(); g.arc(x, y, 3 + q * 5, 0, 7); g.fill();
         }
         if (y > KO.GROUND_Y) break;
       }
+      // power meter arc around the slingshot
+      g.globalAlpha = 1; g.lineCap = "round";
+      g.strokeStyle = "rgba(255,255,255,0.35)"; g.lineWidth = 8; g.beginPath(); g.arc(SL().x, SL().y, 62, Math.PI * 0.75, Math.PI * 2.25); g.stroke();
+      g.strokeStyle = drag.pull > 0.85 ? "#ffd52e" : "#7ff6ff"; g.beginPath(); g.arc(SL().x, SL().y, 62, Math.PI * 0.75, Math.PI * (0.75 + 1.5 * drag.pull)); g.stroke();
+      g.globalAlpha = 1;
+    }
+    // first-level coach: a ghost hand drags the stone back
+    if (levelIndex === 0 && shotsUsed === 0 && !drag && Game.state === "aim" && reloadT > 0.6) {
+      const c = ((reloadT - 0.6) % 2.2) / 2.2, k = Math.min(1, c / 0.6), e = 1 - Math.pow(1 - k, 3);
+      const hx = SL().x - 110 * e, hy = SL().y + 60 * e;
+      g.globalAlpha = c > 0.85 ? (1 - c) / 0.15 : Math.min(1, c * 5);
+      g.setLineDash([10, 10]); g.strokeStyle = "rgba(255,255,255,0.8)"; g.lineWidth = 4;
+      g.beginPath(); g.moveTo(SL().x, SL().y); g.lineTo(hx, hy); g.stroke(); g.setLineDash([]);
+      // fingertip
+      g.fillStyle = "rgba(255,255,255,0.35)"; g.beginPath(); g.arc(hx, hy, 34 - 8 * e, 0, 7); g.fill();
+      g.fillStyle = "#fff"; g.beginPath(); g.arc(hx, hy, 16, 0, 7); g.fill();
+      g.strokeStyle = "#3b2a7a"; g.lineWidth = 3; g.stroke();
       g.globalAlpha = 1;
     }
     FX().draw(g);
-    // off-screen indicator when the gumball flies above the top of the screen
+    KO.Dogs && KO.Dogs.drawBubbles(g);
+    // off-screen indicator when the stone flies above the top of the screen
     if (ball && Game.state === "flying") {
       const v = KO.Art.view(), yTop = -v.offY / v.scale;
       if (ball.position.y < yTop - KO.BALL_R) {

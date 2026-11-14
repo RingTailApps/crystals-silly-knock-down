@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#3fb6ff">
-<title>Crystals Silly Knock Down</title>
+<meta name="theme-color" content="#2f86ff">
+<meta name="description" content="Crystal KnockOut: pull the slingshot and knock every silly crystal off its pedestal.">
+<title>Crystal KnockOut</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect x=%228%22 y=%228%22 width=%2248%22 height=%2248%22 rx=%2214%22 fill=%22%23ff3b5c%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -33,7 +34,7 @@
   <!-- HUD -->
   <div id="hud" class="hidden">
     <button class="rbtn small" id="btn-pause" aria-label="Pause"><svg><use href="#i-pause"/></svg></button>
-    <div class="hud-center">
+    <div class="hud-center glass">
       <div class="hud-level">Level <b id="hud-level">1</b></div>
       <div class="hud-score" id="hud-score">0</div>
     </div>
@@ -47,7 +48,7 @@
   <section id="screen-title" class="screen">
     <div class="title-wrap">
       <div class="logo" id="logo"></div>
-      <div class="tagline">Pull. Aim. <em>Knock 'em all off!</em></div>
+      <div class="tagline">Pull. Aim. <em>Smash every crystal!</em></div>
       <button class="btn btn-green btn-big" id="btn-play"><span>PLAY</span></button>
     </div>
     <div class="title-row">
@@ -60,9 +61,9 @@
 
   <!-- Level select -->
   <section id="screen-levels" class="screen hidden">
-    <header class="levels-top">
+    <header class="levels-top glass">
       <button class="rbtn small" id="btn-levels-back" aria-label="Back"><svg><use href="#i-back"/></svg></button>
-      <div class="levels-title">Candy Trail</div>
+      <div class="levels-title">Crystal Trail</div>
       <div class="star-total"><svg><use href="#i-star"/></svg><span id="star-total">0</span></div>
     </header>
     <div class="map-scroll" id="map-scroll"><div class="map" id="map"></div></div>
@@ -85,18 +86,22 @@
   </div>
 
   <div id="modal-complete" class="modal hidden">
+    <div class="rays"></div>
     <div class="panel">
       <div class="ribbon gold"><span>Level Complete!</span></div>
+      <div class="panel-dog chance-peek"><img src="assets/chance.png" alt="Chance" title="Chance (aka Bubba)" id="complete-chance"><div class="dog-bubble" id="complete-bubble">Chance: Nice shot!</div></div>
       <div class="panel-body">
         <div class="big-stars">
           <div class="bstar s1"><svg class="empty"><use href="#i-star"/></svg><svg class="full"><use href="#i-star"/></svg></div>
           <div class="bstar s2"><svg class="empty"><use href="#i-star"/></svg><svg class="full"><use href="#i-star"/></svg></div>
           <div class="bstar s3"><svg class="empty"><use href="#i-star"/></svg><svg class="full"><use href="#i-star"/></svg></div>
         </div>
+        <div class="cheer" id="complete-cheer"></div>
         <div class="score-label">Score</div>
         <div class="score-big" id="complete-score">0</div>
         <div class="score-sub" id="complete-bonus"></div>
         <div class="score-best" id="complete-best"></div>
+        <button class="feed-btn" id="btn-feed" title="Give Chance a treat"><img src="assets/chance-head.png" alt=""><span>Feed Bubba</span><b id="treat-count">0</b></button>
         <div class="btn-row">
           <button class="rbtn" id="btn-complete-levels" aria-label="Levels"><svg><use href="#i-map"/></svg></button>
           <button class="rbtn" id="btn-complete-replay" aria-label="Replay"><svg><use href="#i-restart"/></svg></button>
@@ -108,10 +113,15 @@
 
   <div id="modal-failed" class="modal hidden">
     <div class="panel">
-      <div class="ribbon red"><span>Out of Gumballs!</span></div>
+      <div class="ribbon red"><span>Out of Stones!</span></div>
       <div class="panel-body">
-        <canvas id="sad-block" width="160" height="160"></canvas>
+        <div class="fail-art">
+          <div class="dog-bubble left" id="fail-bubble">Kevin: Ruff luck...</div>
+          <img class="kevin-sad" src="assets/kevin.png" alt="Kevin" title="Kevin">
+          <canvas id="sad-block" width="160" height="160"></canvas>
+        </div>
         <div class="fail-text" id="fail-text">So close!</div>
+        <div class="fail-sub" id="fail-sub">Tip: aim at the bottom of a stack.</div>
         <button class="btn btn-green" id="btn-retry"><svg><use href="#i-restart"/></svg><span>Try Again</span></button>
         <button class="btn btn-blue" id="btn-failed-levels"><svg><use href="#i-map"/></svg><span>Levels</span></button>
       </div>
@@ -131,8 +141,8 @@
     </div>
   </div>
 
-  <div id="banner" class="hidden"><div class="banner-inner"><div class="banner-level" id="banner-level">Level 1</div><div class="banner-name" id="banner-name">First Bite</div><div class="banner-goal" id="banner-goal"></div></div></div>
-  <div id="hint" class="hidden">Drag the gumball back &amp; let go!</div>
+  <div id="banner" class="hidden"><div class="banner-inner"><div class="banner-level" id="banner-level">Level 1</div><div class="banner-name" id="banner-name">First Strike</div><div class="banner-goal" id="banner-goal"></div></div></div>
+  <div id="hint" class="hidden">Drag the stone back &amp; let go!</div>
   <div id="transition"></div>
 </div>
 
@@ -142,6 +152,7 @@
 <script src="js/audio.js"></script>
 <script src="js/art.js"></script>
 <script src="js/fx.js"></script>
+<script src="js/dogs.js"></script>
 <script src="js/game.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>

@@ -47,10 +47,12 @@
   /* ---------------- title ---------------- */
   function buildLogo() {
     const grads = [
-      "linear-gradient(#fff3a1, #ffd52e 45%, #ff8a1f)", "linear-gradient(#ffc2ec, #ff5fcf 50%, #c21f8d)",
-      "linear-gradient(#b6f78c, #4fd34a 50%, #1f8f2a)", "linear-gradient(#9fd2ff, #3b8cff 50%, #1c4fc2)",
-      "linear-gradient(#e0b3ff, #a855f7 50%, #6b21a8)", "linear-gradient(#ff8fa3, #ff3b5c 50%, #b3122f)",
-      "linear-gradient(#9ff5ea, #22d1c0 50%, #0d8c80)"
+      "linear-gradient(160deg, #ffffff 0 18%, #a8f6ff 19% 45%, #22c7ee 46% 70%, #1491c9 71%)",
+      "linear-gradient(160deg, #ffffff 0 18%, #e3c4ff 19% 45%, #a855f7 46% 70%, #6d28d9 71%)",
+      "linear-gradient(160deg, #ffffff 0 18%, #ffb8cf 19% 45%, #ff3b7a 46% 70%, #c0174f 71%)",
+      "linear-gradient(160deg, #ffffff 0 18%, #fff2a0 19% 45%, #ffc21f 46% 70%, #e07a00 71%)",
+      "linear-gradient(160deg, #ffffff 0 18%, #b6ffc9 19% 45%, #22c55e 46% 70%, #0e8a43 71%)",
+      "linear-gradient(160deg, #ffffff 0 18%, #b8d8ff 19% 45%, #3b8cff 46% 70%, #1d4fd0 71%)"
     ];
     const logo = $("logo"); logo.innerHTML = "";
     let k = 0;
@@ -64,14 +66,18 @@
       });
       logo.appendChild(line);
     });
+    [[8, 10, 0], [88, 46, 1.1], [40, 78, 1.9]].forEach(([x, y, d]) => {
+      const gl = document.createElement("i"); gl.className = "glint";
+      gl.style.cssText = `left:${x}%;top:${y}%;animation-delay:${1.6 + d}s`; logo.appendChild(gl);
+    });
     document.title = KO.GAME_TITLE;
     $("studio").textContent = KO.STUDIO;
-    $("credits").textContent = `${KO.GAME_TITLE} prototype · a ${KO.STUDIO} game`;
+    $("credits").textContent = `${KO.GAME_TITLE} · Featuring Chance & Kevin · a ${KO.STUDIO} game`;
   }
 
   /* ---------------- level map ---------------- */
-  const nodeCols = [["#ff7eb6", "#e8379f", "#a3176b"], ["#ffc75a", "#ff8a1f", "#b8540a"], ["#8ef05a", "#2fbf3a", "#1b7f24"],
-    ["#7cc4ff", "#2f7cf0", "#1a4fb0"], ["#d6a8ff", "#9a4ff0", "#5f1fa8"], ["#7ff0e0", "#18bfae", "#0d7f74"]];
+  const nodeCols = [["#9ff2ff", "#22c7ee", "#127fb0"], ["#e8ccff", "#a855f7", "#6d28d9"], ["#ffb8cf", "#ff3b7a", "#b8124a"],
+    ["#b6ffc9", "#22c55e", "#0e7a3c"], ["#fff2a0", "#ffb21f", "#cf6a00"], ["#b8d8ff", "#3b8cff", "#1d47c0"]];
   function buildMap() {
     const map = $("map"), n = KO.LEVELS.length, gap = 150, topPad = 170, botPad = 150;
     const H = topPad + (n - 1) * gap + botPad;
@@ -85,21 +91,33 @@
     const svgNS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(svgNS, "svg"); svg.setAttribute("class", "path");
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.style.width = W + "px"; svg.style.left = "50%"; svg.style.marginLeft = -W / 2 + "px";
-    svg.innerHTML = `<path d="${d}" fill="none" stroke="rgba(120,20,80,.25)" stroke-width="34" stroke-linecap="round" transform="translate(0,6)"/>
-      <path d="${d}" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round"/>
-      <path d="${d}" fill="none" stroke="#ff7eb6" stroke-width="30" stroke-dasharray="18 18" stroke-linecap="butt"/>
-      <path d="${d}" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="8" stroke-linecap="round" transform="translate(-4,-6)"/>`;
+    const unlockedIdx = Save.unlocked();
+    let dDone = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i <= unlockedIdx; i++) { const a = pts[i - 1], b = pts[i], my = (a.y + b.y) / 2; dDone += ` C ${a.x} ${my}, ${b.x} ${my}, ${b.x} ${b.y}`; }
+    svg.innerHTML = `<defs><filter id="pglow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+      <path d="${d}" fill="none" stroke="rgba(20,8,70,.28)" stroke-width="40" stroke-linecap="round" transform="translate(0,7)"/>
+      <path d="${d}" fill="none" stroke="#8a7a9e" stroke-width="38" stroke-linecap="round"/>
+      <path d="${d}" fill="none" stroke="#d9cfe6" stroke-width="30" stroke-linecap="round"/>
+      <path d="${d}" fill="none" stroke="#bfb2d1" stroke-width="30" stroke-dasharray="26 6" stroke-linecap="butt"/>
+      <path d="${dDone}" fill="none" stroke="#6ff3ff" stroke-width="14" stroke-linecap="round" filter="url(#pglow)" opacity=".9"/>
+      <path d="${dDone}" fill="none" stroke="#ffffff" stroke-width="5" stroke-dasharray="2 14" stroke-linecap="round"/>
+      <path d="${d}" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="4" stroke-linecap="round" transform="translate(-6,-7)"/>`;
     map.appendChild(svg);
-    // decorations
-    const deco = ["#ff7eb6", "#7ed8ff", "#ffd45e", "#8ef05a", "#c58bff"];
+    // scenery: crystal clusters, trees and little mountains beside the path
+    const gemCols = [["#9ff2ff", "#22c7ee"], ["#e8ccff", "#a855f7"], ["#ffb8cf", "#ff3b7a"], ["#fff2a0", "#ffb21f"], ["#b6ffc9", "#22c55e"]];
     for (let i = 0; i < n; i++) {
       const side = i % 2 ? 1 : -1, x = W / 2 - side * W * 0.38, y = H - botPad - i * gap - gap / 2;
       const el = document.createElement("div"); el.className = "map-deco";
-      const c = deco[i % deco.length];
-      el.style.cssText = `left:calc(50% + ${x - W / 2}px);top:${y}px;width:46px;height:100px;margin-left:-23px`;
-      el.innerHTML = `<svg viewBox="0 0 46 100" style="width:46px;height:100px"><rect x="20" y="40" width="6" height="58" rx="3" fill="#fff"/>
-        <circle cx="23" cy="24" r="21" fill="${c}"/><path d="M23 24 m-14 0 a14 14 0 1 0 14 -14 a10 10 0 1 0 10 10 a6 6 0 1 0 -6 6" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-        <ellipse cx="15" cy="14" rx="6" ry="4" fill="rgba(255,255,255,.6)"/></svg>`;
+      el.style.cssText = `left:calc(50% + ${x - W / 2}px);top:${y - 40}px;width:80px;height:90px;margin-left:-40px`;
+      const kind = i % 3, c = gemCols[i % gemCols.length];
+      if (kind === 0) el.innerHTML = `<svg viewBox="0 0 80 90" style="width:80px;height:90px"><ellipse cx="40" cy="84" rx="30" ry="6" fill="rgba(20,8,70,.25)"/>
+        <g filter="drop-shadow(0 0 6px ${c[1]})"><path d="M22 84 L18 46 L26 34 L33 46 L31 84Z" fill="${c[1]}"/><path d="M34 84 L32 30 L41 14 L50 30 L48 84Z" fill="${c[1]}"/><path d="M50 84 L52 52 L59 42 L65 54 L60 84Z" fill="${c[1]}"/></g>
+        <path d="M32 30 L41 14 L41 84 L34 84Z" fill="${c[0]}" opacity=".8"/><path d="M18 46 L26 34 L26 84 L22 84Z" fill="${c[0]}" opacity=".8"/><path d="M52 52 L59 42 L58 84 L50 84Z" fill="${c[0]}" opacity=".8"/></svg>`;
+      else if (kind === 1) el.innerHTML = `<svg viewBox="0 0 80 90" style="width:80px;height:90px"><ellipse cx="40" cy="84" rx="26" ry="6" fill="rgba(20,8,70,.25)"/>
+        <rect x="36" y="52" width="8" height="32" rx="3" fill="#7a4a2a"/><circle cx="40" cy="36" r="22" fill="#22c55e"/><circle cx="25" cy="50" r="14" fill="#16a34a"/><circle cx="55" cy="50" r="15" fill="#16a34a"/>
+        <circle cx="33" cy="28" r="8" fill="#86efac"/></svg>`;
+      else el.innerHTML = `<svg viewBox="0 0 80 90" style="width:80px;height:90px"><ellipse cx="40" cy="84" rx="34" ry="6" fill="rgba(20,8,70,.25)"/>
+        <path d="M4 84 L36 20 L76 84Z" fill="#8b7cf6"/><path d="M36 20 L76 84 L44 84Z" fill="#6d5ce0"/><path d="M27 38 L36 20 L46 38 L40 34 L35 40 L31 35Z" fill="#fff"/></svg>`;
       map.appendChild(el);
     }
     const unlocked = Save.unlocked();
@@ -110,8 +128,11 @@
       b.style.cssText = `left:calc(50% + ${p.x - W / 2}px);top:${p.y}px;animation-delay:${i * 0.03}s` + (locked ? "" : `;--c1:${c[0]};--c2:${c[1]};--c3:${c[2]}`);
       if (locked) { b.classList.add("locked"); b.innerHTML = `<svg><use href="#i-lock"/></svg>`; }
       else {
-        b.textContent = i + 1;
-        if (i === unlocked && !Save.stars(i)) b.classList.add("current");
+        b.innerHTML = `<span class="num">${i + 1}</span>`;
+        if (i === unlocked && !Save.stars(i)) {
+          b.classList.add("current");
+          b.insertAdjacentHTML("beforeend", `<img class="marker dog" src="assets/chance-head.png" alt="Chance" title="Chance is waiting here!">`);
+        }
         const st = document.createElement("div"); st.className = "node-stars";
         for (let s = 0; s < 3; s++) st.innerHTML += `<svg class="${s < Save.stars(i) ? "on" : ""}"><use href="#i-star"/></svg>`;
         b.appendChild(st);
@@ -133,11 +154,11 @@
 
   /* ---------------- navigation ---------------- */
   UI.showTitle = function () {
-    UI.screen = "title"; KO.mode = "menu";
+    UI.screen = "title"; KO.mode = "menu"; KO.Dogs && KO.Dogs.reset(); KO.setRegion && KO.setRegion(null);
     show($("screen-title")); hide($("screen-levels")); hide($("hud"));
   };
   UI.showLevels = function () {
-    UI.screen = "levels"; KO.mode = "map";
+    UI.screen = "levels"; KO.mode = "map"; KO.setRegion && KO.setRegion(null);
     hide($("screen-title")); hide($("hud")); [$("modal-pause"), $("modal-complete"), $("modal-failed")].forEach(hide);
     show($("screen-levels")); buildMap();
   };
@@ -166,7 +187,7 @@
     } else if (type === "intro") {
       const bn = $("banner"); show(bn);
       $("banner-level").textContent = `Level ${d.level}`; $("banner-name").textContent = d.name;
-      $("banner-goal").textContent = `Knock all ${d.blocks} off · ${d.shots} gumballs`;
+      $("banner-goal").textContent = `Knock all ${d.blocks} off · ${d.shots} stones`;
       const inner = bn.firstElementChild; inner.style.animation = "none"; void inner.offsetWidth; inner.style.animation = "";
       clearTimeout(UI._bt); UI._bt = setTimeout(() => hide(bn), 2150);
     } else if (type === "ready") {
@@ -186,6 +207,9 @@
     const rec = Save.record(d.level - 1, d.stars, d.total);
     m.querySelectorAll(".bstar").forEach(s => s.classList.remove("on"));
     const scoreEl = $("complete-score"), bonusEl = $("complete-bonus"), bestEl = $("complete-best");
+    $("complete-bubble").textContent = "Chance: " + ["Good try!", "Nice shot!", "Pawsome!"][d.stars - 1];
+    syncTreats();
+    $("complete-cheer").textContent = ["Nice try!", "Great shooting!", "Flawless!"][d.stars - 1];
     scoreEl.textContent = "0"; bonusEl.textContent = ""; bestEl.textContent = ""; bestEl.classList.remove("new");
     $("btn-next").style.visibility = d.level < KO.LEVELS.length ? "visible" : "hidden";
     for (let i = 0; i < d.stars; i++) setTimeout(() => {
@@ -202,7 +226,7 @@
       if (now - lastC > 50 && k > 0 && k < 1) { lastC = now; A().count(); }
       if (k < 1) requestAnimationFrame(tick);
       else if (d.bonus > 0) {
-        bonusEl.textContent = `+${d.bonus.toLocaleString()} for ${d.shotsLeft} unused gumball${d.shotsLeft > 1 ? "s" : ""}`;
+        bonusEl.textContent = `+${d.bonus.toLocaleString()} for ${d.shotsLeft} unused stone${d.shotsLeft > 1 ? "s" : ""}`;
         const t1 = performance.now();
         (function tick2(n2) {
           const q = Math.min(1, (n2 - t1) / 600);
@@ -219,6 +243,9 @@
   }
   function showFailed(d) {
     show($("modal-failed"));
+    const tips = ["Tip: hit the bottom of a stack to topple it.", "Tip: a flatter, full-power shot carries more punch.", "Tip: volatile crystals blast everything nearby.", "Tip: heavy obsidian needs a direct hit."];
+    $("fail-sub").textContent = tips[(d.level + d.blocksLeft) % tips.length];
+    const fb = $("fail-bubble"); fb.style.animation = "none"; void fb.offsetWidth; fb.style.animation = "";
     $("fail-text").textContent = d.blocksLeft === 1 ? "Just 1 block left. So close!" : `${d.blocksLeft} blocks still standing.`;
     drawSad();
   }
@@ -272,6 +299,17 @@
     press($("btn-next"), () => UI.startLevel(Math.min(UI.current + 1, KO.LEVELS.length - 1)));
     press($("btn-retry"), () => UI.startLevel(UI.current));
     press($("btn-failed-levels"), () => UI.transition(() => UI.showLevels()));
+    press($("btn-feed"), () => {
+      const img = $("complete-chance"), bub = $("complete-bubble");
+      if (treatsLeft() > 0) {
+        Save.data.treatsFed = (Save.data.treatsFed || 0) + 1; Save.write(); syncTreats();
+        bub.textContent = "Chance: " + ["Yum!", "Nom nom!", "Best. Treat. Ever."][Save.data.treatsFed % 3];
+        const r = img.getBoundingClientRect(); KO.screenBurst && KO.screenBurst(r.left + r.width / 2, r.top + r.height * 0.35);
+        A().sparkle();
+      } else bub.textContent = "Chance: Earn stars for treats!";
+      img.classList.remove("hop"); void img.offsetWidth; img.classList.add("hop");
+      bub.style.animation = "none"; void bub.offsetWidth; bub.style.animation = "bubbleIn .35s var(--spring) both";
+    });
     press($("btn-settings-close"), () => closeModal($("modal-settings")));
     let resetArmed = false;
     press($("btn-reset"), (e) => {
@@ -288,6 +326,8 @@
     KO.Game.on(onGame);
     UI.showTitle();
   };
+  function treatsLeft() { return Math.max(0, Save.totalStars() - (Save.data.treatsFed || 0)); }
+  function syncTreats() { $("treat-count").textContent = treatsLeft(); }
   UI.hideHint = () => hide($("hint"));
   KO.UI = UI;
 })(window.KO);

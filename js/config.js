@@ -1,8 +1,8 @@
-/* Knock Over — global config. Rename the game by changing GAME_TITLE. */
+/* Crystal KnockOut — global config. Rename the game by changing GAME_TITLE. */
 window.KO = window.KO || {};
 (function (KO) {
-  KO.GAME_TITLE = "Crystals Silly Knock Down";
-  KO.LOGO_LINES = ["Crystals", "Silly", "Knock Down"];
+  KO.GAME_TITLE = "Crystal KnockOut";
+  KO.LOGO_LINES = ["Crystal", "KnockOut"];
   KO.STUDIO = "RingTailApps";
   KO.SAVE_KEY = "knockover.save.v1";
 
@@ -10,7 +10,7 @@ window.KO = window.KO || {};
   KO.W = 900;
   KO.H = 1400;
   KO.GROUND_Y = 1180;
-  KO.VIEW_REGION = { x0: 40, x1: 905, y0: 300, y1: 1235 }; // area always kept on screen
+  KO.VIEW_REGION = { x0: 28, x1: 905, y0: 300, y1: 1235 }; // area always kept on screen
 
   // Slingshot
   KO.SLING = { x: 175, y: 925 };      // ball rest position
@@ -24,7 +24,7 @@ window.KO = window.KO || {};
   KO.STEP_MS = 1000 / 60;
   KO.GRAVITY_PER_STEP = 0.001 * KO.STEP_MS * KO.STEP_MS; // matches Matter gravity.scale=0.001, y=1
 
-  // Candy palette: [highlight, base, shadow]
+  // Gem palette: [highlight, base, shadow]
   KO.COLORS = {
     red:    ["#ff8fa3", "#ff3b5c", "#b3122f"],
     orange: ["#ffc68a", "#ff8a1f", "#c2520a"],
@@ -34,13 +34,13 @@ window.KO = window.KO || {};
     blue:   ["#9fd2ff", "#3b8cff", "#1c4fc2"],
     purple: ["#e0b3ff", "#a855f7", "#6b21a8"],
     pink:   ["#ffc2ec", "#ff5fcf", "#c21f8d"],
-    choco:  ["#a87452", "#6b3f24", "#3b200f"],
-    jelly:  ["#c8fff4", "#5ff0d9", "#139c88"]
+    obsidian: ["#6d6a8e", "#2e2a48", "#14111f"],
+    quartz: ["#d9fff6", "#5ff0d9", "#119a86"]
   };
   KO.PALETTE = ["red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"];
 
   KO.COMBO_WORDS = [
-    [2, "Sweet!"], [4, "Tasty!"], [6, "Delicious!"], [8, "Smashing!"], [11, "Sugar Rush!"]
+    [2, "Nice!"], [4, "Great!"], [6, "Awesome!"], [8, "Smashing!"], [11, "Crystal Clear!"]
   ];
   KO.CLEAR_WORD = "Total Knockout!";
 })(window.KO);
